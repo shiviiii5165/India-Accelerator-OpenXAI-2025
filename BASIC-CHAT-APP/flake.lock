@@ -1,43 +1,35 @@
 {
-  "nodes": {
-    "nixpkgs": {
-      "locked": {
-        "lastModified": 1751984180,
-        "narHash": "sha256-LwWRsENAZJKUdD3SpLluwDmdXY9F45ZEgCb0X+xgOL0=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "9807714d6944a957c2e036f84b0ff8caf9930bc0",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "root": {
-      "inputs": {
-        "nixpkgs": "nixpkgs",
-        "systems": "systems"
-      }
-    },
-    "systems": {
-      "locked": {
-        "lastModified": 1681028828,
-        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
-        "owner": "nix-systems",
-        "repo": "default",
-        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nix-systems",
-        "repo": "default",
-        "type": "github"
-      }
-    }
-  },
-  "root": "root",
-  "version": 7
+  description = "AI powered flake example 🚀";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    systems.url = "github:nix-systems/default";
+
+    # Example AI input (huggingface transformers)
+    transformers-flake = {
+      url = "github:huggingface/transformers";
+      flake = false; # kyunki ye flake-enabled repo nahi hai
+    };
+  };
+
+  outputs = { self, nixpkgs, systems, transformers-flake, ... }:
+    let
+      supportedSystems = import systems;
+      forAllSystems = f: nixpkgs.lib.genAttrs supportedSystems (system: f (import nixpkgs { inherit system; }));
+    in
+    {
+      packages = forAllSystems (pkgs: {
+        default = pkgs.python3Packages.buildPythonPackage {
+          pname = "transformers-env";
+          version = "0.1";
+
+          src = transformers-flake;
+
+          propagatedBuildInputs = with pkgs.python3Packages; [
+            torch
+            transformers
+          ];
+        };
+      });
+    };
 }
